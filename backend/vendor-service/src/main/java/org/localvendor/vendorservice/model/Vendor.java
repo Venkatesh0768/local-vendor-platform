@@ -2,9 +2,15 @@ package org.localvendor.vendorservice.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import lombok.*;
 
 import java.util.UUID;
 
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Entity(name = "vendors")
 public class Vendor extends BaseModel {
 

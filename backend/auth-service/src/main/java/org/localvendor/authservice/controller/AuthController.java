@@ -91,4 +91,10 @@ public class AuthController {
         AuthResponse response = authService.refreshToken(token);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse> logout(@RequestBody LogoutRequest request) {
+        ApiResponse response = authService.logout(request.getRefreshToken());
+        return ResponseEntity.ok(response);
+    }
 }

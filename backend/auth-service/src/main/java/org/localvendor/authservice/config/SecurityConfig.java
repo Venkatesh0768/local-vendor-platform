@@ -50,7 +50,8 @@ public class SecurityConfig {
                                 "/api/auth/resend-otp",
                                 "/api/auth/refresh-token",
                                 "/api/auth/reset-password",
-                                "/api/auth/forgot-password"
+                                "/api/auth/forgot-password",
+                                "/api/auth/logout"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/vendor/**").hasAnyRole("VENDOR", "ADMIN")

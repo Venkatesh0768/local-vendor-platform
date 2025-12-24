@@ -184,6 +184,24 @@ public class AuthService {
 
 
 
+    @Transactional
+    public ApiResponse logout(String refreshToken) {
+
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new InvalidTokenException("Refresh token is required for logout");
+        }
+
+        refreshTokenRepository.findByToken(refreshToken)
+                .ifPresent(refreshTokenRepository::delete);
+
+        return new ApiResponse(true, "Logged out successfully", null);
+    }
+
+
+
+
+
+
     private UserDTO convertToUserDTO(User user) {
         return UserDTO.builder()
                 .id(user.getId())

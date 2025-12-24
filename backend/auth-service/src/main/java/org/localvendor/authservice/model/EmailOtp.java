@@ -28,7 +28,4 @@ public class EmailOtp extends BaseModel {
     @Column(nullable = false)
     private boolean verified = false;
 
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 }

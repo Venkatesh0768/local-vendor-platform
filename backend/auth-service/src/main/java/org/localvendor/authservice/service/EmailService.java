@@ -3,6 +3,7 @@ package org.localvendor.authservice.service;
 
 import lombok.RequiredArgsConstructor;
 import org.localvendor.authservice.exception.EmailSendingException;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +15,7 @@ public class EmailService {
 
     public void sendOTPEmail(String to, String otpCode) {
         try {
-            org.springframework.mail.SimpleMailMessage message =
-                    new org.springframework.mail.SimpleMailMessage();
-
+           SimpleMailMessage message =new SimpleMailMessage();
             message.setTo(to);
             message.setSubject("Email Verification - OTP");
             message.setText(
@@ -33,8 +32,7 @@ public class EmailService {
 
     public void sendPasswordResetOTPEmail(String to, String otpCode) {
         try {
-            org.springframework.mail.SimpleMailMessage message =
-                    new org.springframework.mail.SimpleMailMessage();
+           SimpleMailMessage message = new SimpleMailMessage();
 
             message.setTo(to);
             message.setSubject("Password Reset - OTP");
