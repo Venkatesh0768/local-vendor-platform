@@ -56,6 +56,7 @@ public class AuthService {
 
         // Create user
         User user = User.builder()
+                .phoneNumber(request.getPhoneNumber())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
@@ -64,7 +65,6 @@ public class AuthService {
                 .enabled(false)
                 .build();
 
-        // Assign default role
         Role userRole = roleRepository.findByName(RoleType.ROLE_CUSTOMER)
                 .orElseThrow(() -> new RuntimeException("Default role not found"));
         user.setRoles(Set.of(userRole));

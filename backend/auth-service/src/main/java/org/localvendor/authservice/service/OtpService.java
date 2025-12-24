@@ -54,7 +54,7 @@ public class OtpService {
 
         emailOtpRepository.save(otp);
 
-        emailService.sendOtpEmail(email , otpCode);
+        emailService.sendOTPEmail(email , otpCode);
 
     }
 
@@ -74,7 +74,7 @@ public class OtpService {
 
         emailOtpRepository.save(otp);
 
-        emailService.sendOtpEmail(email , otpCode);
+        emailService.sendPasswordResetOTPEmail(email , otpCode);
 
         
     }

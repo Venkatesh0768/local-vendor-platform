@@ -13,7 +13,7 @@ public class SignupRequest {
             regexp = "^[+]?[0-9]{10,15}$",
             message = "Invalid phone number format"
     )
-    private String phoneNumer;
+    private String phoneNumber;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")

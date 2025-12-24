@@ -25,8 +25,8 @@ public class User extends BaseModel {
 
     @NotBlank
     @Pattern(regexp = "^[6-9]\\d{9}$", message = "Invalid Indian phone number")
-    @Column(nullable = false, length = 15)
-    private String phone;
+    @Column(name = "phone_number", nullable = false, length = 15)
+    private String phoneNumber;
 
     @Column(unique = true, nullable = false)
     private String email;
