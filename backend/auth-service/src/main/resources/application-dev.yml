@@ -1,40 +1,50 @@
 spring:
-  application:
-    dev:
-      name: auth-service-dev
-
-  datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
+  config:
+    activate:
+      on-profile: dev
 
   jpa:
-    hibernate:
-      ddl-auto: update
     show-sql: true
 
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        SMTP:
-          auth: true
-          STARTTLS:
-            enable: true
+  devtools:
+    restart:
+      enabled: true
 
+app:
+  cookie:
+    secure: false
 
-jwt:
-  secret: ${JWT_SECRET}
-  expiration: 86400000
-  refresh-token-expiration: 604800000
-  # JWT Configuration
+logging:
+  level:
+    com.enterprise.auth: DEBUG
 
-otp:
-  expiration: 300000
-  length: 6
-  
+---
+# application-prod.yml
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    show-sql: false
+
+  datasource:
+    hikari:
+      maximum-pool-size: 50
+
+app:
+  cookie:
+    secure: true
+    same-site: Strict
+
+logging:
+  level:
+    root: WARN
+    com.enterprise.auth: INFO
+
+server:
+  ssl:
+    enabled: ${SSL_ENABLED:true}
+    key-store: ${SSL_KEY_STORE:classpath:keystore.p12}
+    key-store-password: ${SSL_KEY_STORE_PASSWORD}
+    key-store-type: PKCS12

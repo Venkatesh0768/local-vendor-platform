@@ -1,50 +1,6 @@
 package org.localvendor.authservice.service;
 
-
-import lombok.RequiredArgsConstructor;
-import org.localvendor.authservice.exception.EmailSendingException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.stereotype.Service;
-
-@Service
-@RequiredArgsConstructor
-public class EmailService {
-
-    private final JavaMailSender mailSender;
-
-    public void sendOTPEmail(String to, String otpCode) {
-        try {
-           SimpleMailMessage message =new SimpleMailMessage();
-            message.setTo(to);
-            message.setSubject("Email Verification - OTP");
-            message.setText(
-                    "Your OTP for email verification is: " + otpCode + "\n\n" +
-                            "This OTP will expire in 5 minutes.\n\n" +
-                            "If you didn't request this, please ignore this email."
-            );
-
-            mailSender.send(message);
-        } catch (Exception e) {
-            throw new EmailSendingException("Failed to send OTP email", e);
-        }
-    }
-
-    public void sendPasswordResetOTPEmail(String to, String otpCode) {
-        try {
-           SimpleMailMessage message = new SimpleMailMessage();
-
-            message.setTo(to);
-            message.setSubject("Password Reset - OTP");
-            message.setText(
-                    "Your OTP for password reset is: " + otpCode + "\n\n" +
-                            "This OTP will expire in 5 minutes.\n\n" +
-                            "If you didn't request this, please ignore this email."
-            );
-
-            mailSender.send(message);
-        } catch (Exception e) {
-            throw new EmailSendingException("Failed to send password reset OTP email", e);
-        }
-    }
+public interface EmailService {
+    void sendEmail(String to, String subject, String text);
+    void sendHtmlEmail(String to, String subject, String htmlContent);
 }
