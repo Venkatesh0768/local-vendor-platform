@@ -1,14 +1,11 @@
 package org.localvendor.authservice.service;
 
 
-import org.localvendor.authservice.dto.request.*;
-import org.localvendor.authservice.dto.response.*;
+import org.localvendor.authservice.dto.ApiResponse;
+import org.localvendor.authservice.dto.LoginRequestDto;
+import org.localvendor.authservice.dto.SignupRequestDto;
 
-public interface AuthService {
-    ApiResponse<Void> signUp(SignUpRequest signUpRequest);
-    AuthResponse signIn(SignInRequest signInRequest);
-    ApiResponse<Void> verifyOtp(VerifyOtpRequest verifyOtpRequest);
-    ApiResponse<Void> resendOtp(ResendOtpRequest resendOtpRequest);
-    AuthResponse refreshToken(String refreshToken);
-    ApiResponse<Void> logout(String refreshToken);
+public interface  AuthService {
+    public ApiResponse signup(SignupRequestDto requestDto);
+    public ApiResponse login(LoginRequestDto requestDto);
 }
