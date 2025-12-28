@@ -1,12 +1,25 @@
+
+
 spring:
   application:
     name: auth-service
-
   datasource:
-    url: jdbc:mysql://localhost:3306/auth_db_dev1
-    username: root
-    password: Realme6G90T
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
+  mail:
+    host: smtp.gmail.com
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    port: 587
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
   jpa:
     hibernate:
@@ -14,6 +27,11 @@ spring:
     show-sql: true
 
 
+
+otp:
+  length: 6
+  expiration: 300000
+
+
 server:
-  servlet:
-    context-path: /api/v1
+  port: 8080

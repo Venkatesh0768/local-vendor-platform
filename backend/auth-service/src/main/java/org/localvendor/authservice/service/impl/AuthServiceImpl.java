@@ -1,5 +1,6 @@
 package org.localvendor.authservice.service.impl;
 
+
 import lombok.RequiredArgsConstructor;
 import org.localvendor.authservice.dto.ApiResponse;
 import org.localvendor.authservice.dto.LoginRequestDto;
@@ -12,9 +13,11 @@ import org.localvendor.authservice.model.User;
 import org.localvendor.authservice.repositories.RoleRepository;
 import org.localvendor.authservice.repositories.UserRepository;
 import org.localvendor.authservice.service.AuthService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Set;
@@ -26,8 +29,10 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OtpServiceImpl otpService;
 
     @Override
+    @Transactional
     public ApiResponse signup(SignupRequestDto requestDto) {
 
         if (requestDto == null) {
@@ -63,6 +68,8 @@ public class AuthServiceImpl implements AuthService {
 
         //Save User
         User savedUser = userRepository.save(user);
+
+        otpService.generateAndSendOtp(savedUser.getEmail());
 
         return new ApiResponse(true, "Registration successful. Please verify your email with OTP sent to " +
                 user.getEmail(), null);

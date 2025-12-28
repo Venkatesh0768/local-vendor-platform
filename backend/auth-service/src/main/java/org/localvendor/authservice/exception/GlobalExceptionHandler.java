@@ -39,4 +39,18 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(error , HttpStatus.BAD_REQUEST);
     }
+
+
+    @ExceptionHandler(EmailSendingException.class)
+    public ResponseEntity<ErrorResponse> handleEmailSendingException(EmailSendingException ex , WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Failed To Send the Email or Otp",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=" , "")
+        );
+        return  new ResponseEntity<>(error , HttpStatus.INTERNAL_SERVER_ERROR);
+
+    }
 }
