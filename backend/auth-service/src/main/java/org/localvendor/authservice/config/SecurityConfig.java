@@ -1,9 +1,13 @@
 package org.localvendor.authservice.config;
 
+import lombok.RequiredArgsConstructor;
+import org.localvendor.authservice.dto.ApiError;
+import org.localvendor.authservice.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,16 +17,23 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AuthenticationSuccessHandler authenticationSuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,6 +46,26 @@ public class SecurityConfig {
                         .requestMatchers(AppConstants.AUTH_PUBLIC_URLS).permitAll()
                         .anyRequest().authenticated()
                 )
+                .oauth2Login(
+                        oauth2 ->
+                                oauth2.successHandler(authenticationSuccessHandler)
+                                        .failureHandler(null)
+                )
+                .logout(AbstractHttpConfigurer::disable)
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(((request, response, authException) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    String message = authException.getMessage();
+                    String error = (String) request.getAttribute("error");
+                    if (error != null) {
+                        message = error;
+                    }
+//                    Map<String, Object> errorMap = Map.of("message", message, "statusCode",404);
+                    var apiError = ApiError.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized Access", message, request.getRequestURI(), true);
+                    var objectMapper = new ObjectMapper();
+                    response.getWriter().write(objectMapper.writeValueAsString(apiError));
+                })))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -45,22 +76,29 @@ public class SecurityConfig {
 
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws  Exception{
-      return configuration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173/"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.cors.front-end-url}") String corsUrls
+    ) {
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        String[] urls = corsUrls.trim().split(",");
+
+        var config = new CorsConfiguration();
+        config.setAllowedOrigins(Arrays.asList(urls));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        var source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
         return source;
+
+
     }
 }
 

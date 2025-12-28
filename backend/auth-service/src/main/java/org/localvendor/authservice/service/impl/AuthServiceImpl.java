@@ -1,28 +1,43 @@
 package org.localvendor.authservice.service.impl;
 
 
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.localvendor.authservice.dto.ApiResponse;
-import org.localvendor.authservice.dto.LoginRequestDto;
-import org.localvendor.authservice.dto.OtpRequest;
-import org.localvendor.authservice.dto.SignupRequestDto;
-import org.localvendor.authservice.exception.EmailAlreadyExistException;
-import org.localvendor.authservice.exception.EmailAlreadyVerifiedException;
-import org.localvendor.authservice.exception.InvalidOtpException;
-import org.localvendor.authservice.exception.UserNotFoundException;
+import org.localvendor.authservice.dto.*;
+import org.localvendor.authservice.exception.*;
+import org.localvendor.authservice.model.RefreshToken;
 import org.localvendor.authservice.model.Role;
 import org.localvendor.authservice.model.RoleType;
 import org.localvendor.authservice.model.User;
+import org.localvendor.authservice.repositories.RefreshTokenRepository;
 import org.localvendor.authservice.repositories.RoleRepository;
 import org.localvendor.authservice.repositories.UserRepository;
+import org.localvendor.authservice.security.CookieService;
+import org.localvendor.authservice.security.JwtService;
 import org.localvendor.authservice.service.AuthService;
+import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +47,11 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final OtpServiceImpl otpService;
+    private final AuthenticationManager authenticationManager;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final JwtService jwtService;
+    private final CookieService cookieService;
+    private final ModelMapper mapper;
 
     @Override
     @Transactional
@@ -78,11 +98,169 @@ public class AuthServiceImpl implements AuthService {
 
     }
 
+
     @Override
-    public ApiResponse login(LoginRequestDto requestDto) {
-        return null;
+    @Transactional
+    public ApiResponse login(LoginRequestDto requestDto, HttpServletResponse response) {
+        Authentication authenticate = authenticate(requestDto);
+        User user = userRepository.findByEmail(requestDto.getEmail())
+                .orElseThrow(() -> new EmailNotFoundException("The Email is not Found"));
+
+        if (!user.isEnabled()) {
+            throw new DisabledException("User is Disabled");
+        }
+
+        String jti = UUID.randomUUID().toString();
+        var refreshTokenObj = RefreshToken.builder()
+                .jti(jti)
+                .user(user)
+                .createdAt(LocalDateTime.now())
+                .expiresAt(Instant.now().plusSeconds(jwtService.getRefreshTtlSeconds()))
+                .revoked(false)
+                .build();
+
+        refreshTokenRepository.save(refreshTokenObj);
+
+
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user, refreshTokenObj.getJti());
+
+        cookieService.attachRefreshCookie(response, refreshToken, (int) jwtService.getAccessTtlSeconds());
+        cookieService.addNoStoreHeaders(response);
+
+        TokenResponse tokenResponse = TokenResponse.of(accessToken, refreshToken, jwtService.getAccessTtlSeconds(), mapper.map(user, UserDto.class));
+        return new ApiResponse(true, "Login Successfully", tokenResponse);
     }
 
+    public ApiResponse refreshToken(RefreshTokenRequest body, HttpServletResponse response, HttpServletRequest request){
+        String refreshToken = readRefreshTokenFromRequest(body, request).orElseThrow(() -> new BadCredentialsException("Refresh token is missing"));
+
+
+        if(!jwtService.isRefreshToken(refreshToken)){
+            throw new BadCredentialsException("Invalid Refresh Token Type");
+        }
+
+        String jti = jwtService.getJti(refreshToken);
+        UUID userId = jwtService.getUserId(refreshToken);
+        RefreshToken storedRefreshToken = refreshTokenRepository.findByJti(jti).orElseThrow(() -> new BadCredentialsException("Refresh token not recognized"));
+
+        if(storedRefreshToken.isRevoked()){
+            throw new BadCredentialsException("Refresh token expired or revoked");
+        }
+
+        if(storedRefreshToken.getExpiresAt().isBefore(Instant.now())){
+            throw new BadCredentialsException("Refresh token expired");
+        }
+
+        if(!storedRefreshToken.getUser().getId().equals(userId)){
+            throw new BadCredentialsException("Refresh token does not belong to this user");
+        }
+
+        //refresh token ko rotate:
+        storedRefreshToken.setRevoked(true);
+        String newJti= UUID.randomUUID().toString();
+        storedRefreshToken.setReplacedByToken(newJti);
+        refreshTokenRepository.save(storedRefreshToken);
+
+        User user = storedRefreshToken.getUser();
+
+        var newRefreshTokenOb = RefreshToken.builder()
+                .jti(newJti)
+                .user(user)
+                .createdAt(LocalDateTime.from(Instant.now()))
+                .expiresAt(Instant.now().plusSeconds(jwtService.getRefreshTtlSeconds()))
+                .revoked(false)
+                .build();
+
+        refreshTokenRepository.save(newRefreshTokenOb);
+        String newAccessToken= jwtService.generateAccessToken(user);
+        String newRefreshToken = jwtService.generateRefreshToken(user, newRefreshTokenOb.getJti());
+
+
+        cookieService.attachRefreshCookie(response, newRefreshToken, (int) jwtService.getRefreshTtlSeconds());
+        cookieService.addNoStoreHeaders(response);
+
+        TokenResponse response1 = TokenResponse.of(newAccessToken, newRefreshToken, jwtService.getAccessTtlSeconds(), mapper.map(user, UserDto.class));
+        return new ApiResponse(true , "refresh Token" , response1);
+
+    }
+
+    @Transactional
+    public ApiResponse logoutUser(HttpServletRequest request, HttpServletResponse response) {
+        readRefreshTokenFromRequest(null, request).ifPresent(token -> {
+            try {
+                if (jwtService.isRefreshToken(token)) {
+                    String jti = jwtService.getJti(token);
+                    refreshTokenRepository.findByJti(jti).ifPresent(rt -> {
+                        rt.setRevoked(true);
+                        refreshTokenRepository.save(rt);
+                    });
+                }
+            } catch (JwtException ignored) {
+            }
+        });
+
+        // Use CookieUtil (same behavior)
+        cookieService.clearRefreshCookie(response);
+        cookieService.addNoStoreHeaders(response);
+        SecurityContextHolder.clearContext();
+        return new ApiResponse(true, "Logout User SuccessFully", null);
+    }
+
+    private Optional<String> readRefreshTokenFromRequest(RefreshTokenRequest body, HttpServletRequest request) {
+//            1. prefer reading refresh token from cookie
+        if (request.getCookies() != null) {
+
+            Optional<String> fromCookie = Arrays.stream(request.getCookies())
+                    .filter(c -> cookieService.getRefreshTokenCookieName().equals(c.getName()))
+                    .map(Cookie::getValue)
+                    .filter(v -> !v.isBlank())
+                    .findFirst();
+
+            if (fromCookie.isPresent()) {
+                return fromCookie;
+            }
+
+
+        }
+
+        // 2 body:
+        if (body != null && body.refreshToken() != null && !body.refreshToken().isBlank()) {
+            return Optional.of(body.refreshToken());
+        }
+
+        //3. custom header
+        String refreshHeader = request.getHeader("X-Refresh-Token");
+        if (refreshHeader != null && !refreshHeader.isBlank()) {
+            return Optional.of(refreshHeader.trim());
+        }
+
+        //Authorization = Bearer <token>
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            String candidate = authHeader.substring(7).trim();
+            if (!candidate.isEmpty()) {
+                try {
+                    if (jwtService.isRefreshToken(candidate)) {
+                        return Optional.of(candidate);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
+        return Optional.empty();
+
+
+    }
+
+    private Authentication authenticate(LoginRequestDto requestDto) {
+        try {
+            return authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(requestDto.getEmail(), requestDto.getPassword()));
+        } catch (Exception e) {
+            throw new BadCredentialsException("Invalid Username and Password");
+        }
+    }
 
     @Transactional
     public ApiResponse resendOtp(String email) {
@@ -96,7 +274,6 @@ public class AuthServiceImpl implements AuthService {
         otpService.generateAndSendOtp(email);
         return new ApiResponse(true, "Otp Send Successfully to -> " + email, null);
     }
-
 
     public ApiResponse verifyOtp(OtpRequest request) {
         boolean isValid = otpService.validateOtp(request.getEmail(), request.getOtpCode());
