@@ -20,7 +20,7 @@ public class OTP {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     @Column(nullable = false)
@@ -29,9 +29,10 @@ public class OTP {
     @Column(nullable = false)
     private LocalDateTime expiryTime;
 
-    private boolean isVerified = false;
+    @Column(nullable = false)
+    private boolean verified = false;
 
     @CreationTimestamp
-    @Column(nullable = false)
+    @Column(nullable = false , updatable = false)
     private LocalDateTime createdAt;
 }

@@ -53,4 +53,43 @@ public class GlobalExceptionHandler {
         return  new ResponseEntity<>(error , HttpStatus.INTERNAL_SERVER_ERROR);
 
     }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex , WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+              "User not Found",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=" , "")
+        );
+        return  new ResponseEntity<>(error , HttpStatus.BAD_REQUEST);
+
+    }
+
+    @ExceptionHandler(EmailAlreadyVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleEmailAlreadyVerifiedException(EmailAlreadyVerifiedException ex , WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Email Already Verified ",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=" , "")
+        );
+        return  new ResponseEntity<>(error , HttpStatus.BAD_REQUEST);
+
+    }
+
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidOtpException(InvalidOtpException ex , WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Otp Is Invalid ",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=" , "")
+        );
+        return  new ResponseEntity<>(error , HttpStatus.BAD_REQUEST);
+
+    }
 }

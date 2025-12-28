@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.localvendor.authservice.exception.EmailSendingException;
 import org.localvendor.authservice.service.EmailService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -18,41 +17,21 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
 
 
-
-//    public void sendOTPEmail(String to, String otpCode) {
-//        try {
-//            SimpleMailMessage message = new SimpleMailMessage();
-//            message.setTo(to);
-//            message.setSubject("Email Verification Otp");
-//            message.setText(
-//                    "Your OTP for email verification is: " + otpCode + "\n\n" +
-//                            "This OTP will expire in 5 minutes.\n\n" +
-//                            "If you didn't request this, please ignore this email."
-//            );
-//            mailSender.send(message);
-//            log.error("SuccessFull send the Otp to User");
-//        } catch (Exception e) {
-//            log.error("Failed To send the Otp to User");
-//            throw new EmailSendingException("Otp failed To Send ");
-//        }
-//    }
-    @Override
     public void sendOTPEmail(String to, String otpCode) {
         try {
-            org.springframework.mail.SimpleMailMessage message =
-                    new org.springframework.mail.SimpleMailMessage();
-
+            SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(to);
-            message.setSubject("Email Verification - OTP");
+            message.setSubject("Email Verification Otp");
             message.setText(
                     "Your OTP for email verification is: " + otpCode + "\n\n" +
                             "This OTP will expire in 5 minutes.\n\n" +
                             "If you didn't request this, please ignore this email."
             );
-
             mailSender.send(message);
+            log.debug("SuccessFull send the Otp to User");
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send OTP email" + e.getMessage());
+            log.error("Failed To send the Otp to User");
+            throw new EmailSendingException("Otp failed To Send ");
         }
     }
 
@@ -68,7 +47,7 @@ public class EmailServiceImpl implements EmailService {
                             "If you didn't request this, please ignore this email."
             );
             mailSender.send(message);
-            log.error("SuccessFull send the Password Reset - OTP");
+            log.debug("SuccessFull send the Password Reset - OTP");
         } catch (Exception e) {
             log.error("Failed To send the Password Reset - OTP");
             throw new EmailSendingException("Otp failed To Send ");

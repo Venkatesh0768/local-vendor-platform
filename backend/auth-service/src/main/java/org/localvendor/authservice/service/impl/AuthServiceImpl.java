@@ -4,16 +4,18 @@ package org.localvendor.authservice.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.localvendor.authservice.dto.ApiResponse;
 import org.localvendor.authservice.dto.LoginRequestDto;
+import org.localvendor.authservice.dto.OtpRequest;
 import org.localvendor.authservice.dto.SignupRequestDto;
-import org.localvendor.authservice.dto.SignupResponse;
 import org.localvendor.authservice.exception.EmailAlreadyExistException;
+import org.localvendor.authservice.exception.EmailAlreadyVerifiedException;
+import org.localvendor.authservice.exception.InvalidOtpException;
+import org.localvendor.authservice.exception.UserNotFoundException;
 import org.localvendor.authservice.model.Role;
 import org.localvendor.authservice.model.RoleType;
 import org.localvendor.authservice.model.User;
 import org.localvendor.authservice.repositories.RoleRepository;
 import org.localvendor.authservice.repositories.UserRepository;
 import org.localvendor.authservice.service.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -44,7 +46,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (userRepository.existsByEmail(requestDto.getEmail().trim().toLowerCase())) {
-            throw new EmailAlreadyExistException( "Email already registered");
+            throw new EmailAlreadyExistException("Email already registered");
         }
 
         String encode = null;
@@ -79,6 +81,37 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ApiResponse login(LoginRequestDto requestDto) {
         return null;
+    }
+
+
+    @Transactional
+    public ApiResponse resendOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (user.isEmailVerified()) {
+            throw new EmailAlreadyVerifiedException("Email is Already verified");
+        }
+
+        otpService.generateAndSendOtp(email);
+        return new ApiResponse(true, "Otp Send Successfully to -> " + email, null);
+    }
+
+
+    public ApiResponse verifyOtp(OtpRequest request) {
+        boolean isValid = otpService.validateOtp(request.getEmail(), request.getOtpCode());
+        if (!isValid) {
+            throw new InvalidOtpException("Otp is not Valid");
+        }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("User is not found By email" + request.getEmail()));
+
+        user.setEnabled(true);
+        user.setEmailVerified(true);
+        userRepository.save(user);
+
+        return new ApiResponse(true, "Email Verification is successful and now you can free to login ", null);
     }
 
 

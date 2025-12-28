@@ -6,23 +6,24 @@ import org.localvendor.authservice.repositories.OTPRepository;
 import org.localvendor.authservice.service.OTPService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
 public class OtpServiceImpl implements OTPService {
 
+    private final EmailServiceImpl emailService;
+    private final OTPRepository otpRepository;
+
     @Value("${otp.length}")
     private int otpLength;
 
     @Value("${otp.expiration}")
     private long otpExpiration;
-
-
-    private final EmailServiceImpl emailService;
-    private final OTPRepository otpRepository;
 
     @Override
     public String generateOtp() {
@@ -35,6 +36,7 @@ public class OtpServiceImpl implements OTPService {
     }
 
     @Override
+    @Transactional
     public void generateAndSendOtp(String email) {
         //Delete Otps of the Email
         otpRepository.deleteOTPByEmail(email);
@@ -55,12 +57,40 @@ public class OtpServiceImpl implements OTPService {
     }
 
     @Override
+    @Transactional
     public void generateAndSendPasswordResetOTP(String email) {
+        otpRepository.deleteOTPByEmail(email);
 
+        //Generate New Otp
+        String otpCode = generateOtp();
+        LocalDateTime expiry = LocalDateTime.now().plusSeconds(otpExpiration / 1000);
+
+        OTP otp = OTP.builder()
+                .email(email)
+                .otpCode(otpCode)
+                .expiryTime(expiry)
+                .build();
+
+        otpRepository.save(otp);
+
+        emailService.sendPasswordResetOTPEmail(email, otpCode);
     }
 
     @Override
     public boolean validateOtp(String email, String otp) {
-        return false;
+        Optional<OTP> otp1 = otpRepository.findByEmailAndOtpCodeAndVerifiedFalse(email, otp);
+
+        if (otp1.isEmpty()) return false;
+
+        OTP otp2 = otp1.get();
+
+        if (otp2.getExpiryTime().isBefore(LocalDateTime.now())) {
+            return false;
+        }
+
+        otp2.setVerified(true);
+        otpRepository.save(otp2);
+        return true;
+
     }
 }
