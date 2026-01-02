@@ -46,6 +46,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AppConstants.AUTH_PUBLIC_URLS).permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/v1/users/**").hasAnyRole("ADMIN", "USER")
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(
