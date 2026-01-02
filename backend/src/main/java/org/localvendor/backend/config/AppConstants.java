@@ -10,7 +10,10 @@ public class AppConstants {
             "/api/v1/auth/forgot-password",
             "/api/v1/auth/reset-password",
             "/v3/api-docs/**",
+            "/v3/api-docs.yaml",
+            "/swagger-ui/**",
             "/swagger-ui.html",
-            "/swagger-ui/**"
+            "/swagger-resources/**",
+            "/webjars/**"
     };
 }
