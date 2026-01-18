@@ -6,12 +6,12 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-
 @Entity
 @Table(
         name = "vendor_location",
         indexes = {
-                @Index(name = "idx_vendor_location_vendor_id", columnList = "vendor_id")
+                @Index(name = "idx_vendor_location_vendor_id", columnList = "vendor_id"),
+                @Index(name = "idx_vendor_location_updated", columnList = "last_updated_at")
         }
 )
 @Getter
@@ -30,32 +30,44 @@ public class VendorLocation {
     @JoinColumn(name = "vendor_id", nullable = false)
     private Vendor vendor;
 
-    @Column(name = "address_line", nullable = false)
+    /* ---------- Address (ONLY for FIXED vendors) ---------- */
+    @Column(name = "address_line")
     private String addressLine;
 
     @Column(name = "area")
     private String area;
 
-    @Column(name = "city", nullable = false)
+    @Column(name = "city")
     private String city;
 
-    @Column(name = "state", nullable = false)
+    @Column(name = "state")
     private String state;
 
-    @Column(name = "country", nullable = false)
+    @Column(name = "country")
     private String country;
 
-    @Column(name = "pincode", nullable = false)
+    @Column(name = "pincode")
     private String pincode;
 
-    @Column(name = "latitude")
+    /* ---------- Geo ---------- */
+    @Column(name = "latitude", nullable = false)
     private Double latitude;
 
-    @Column(name = "longitude")
+    @Column(name = "longitude", nullable = false)
     private Double longitude;
 
+    /* ---------- Flags ---------- */
     @Column(name = "is_primary", nullable = false)
-    private Boolean isPrimary;
+    private Boolean isPrimary;   // FIXED vendor
+
+    @Column(name = "is_live", nullable = false)
+    private Boolean isLive;      // MOBILE vendor
+
+    private Float accuracy;
+
+    /* ---------- Tracking ---------- */
+    @Column(name = "last_updated_at")
+    private LocalDateTime lastUpdatedAt;
 
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
@@ -64,8 +76,14 @@ public class VendorLocation {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.isPrimary = Boolean.TRUE;
+        this.lastUpdatedAt = LocalDateTime.now();
+
+        if (this.isPrimary == null) this.isPrimary = false;
+        if (this.isLive == null) this.isLive = false;
     }
 
-
+    @PreUpdate
+    protected void onUpdate() {
+        this.lastUpdatedAt = LocalDateTime.now();
+    }
 }

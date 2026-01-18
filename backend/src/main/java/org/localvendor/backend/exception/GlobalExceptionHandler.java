@@ -1,5 +1,7 @@
 package org.localvendor.backend.exception;
 
+import org.localvendor.backend.exception.product_exception.CategoryNotFoundException;
+import org.localvendor.backend.exception.product_exception.ProductNotFoundException;
 import org.localvendor.backend.exception.vendor_exceptions.VendorAlreadyVerifiedException;
 import org.localvendor.backend.exception.vendor_exceptions.VendorNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -114,6 +116,32 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 "Vendor already Verified  ",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=" , "")
+        );
+        return  new ResponseEntity<>(error , HttpStatus.BAD_REQUEST);
+
+    }
+
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCategoryNotFoundException(CategoryNotFoundException ex , WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "By This category id not category is Found ",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=" , "")
+        );
+        return  new ResponseEntity<>(error , HttpStatus.BAD_REQUEST);
+
+    }
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleProductNotFoundException(ProductNotFoundException ex , WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "By This category id the product are not Found ",
                 ex.getMessage(),
                 request.getDescription(false).replace("uri=" , "")
         );

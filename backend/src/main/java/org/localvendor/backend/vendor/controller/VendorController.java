@@ -36,4 +36,6 @@ public class VendorController {
         }
         return ResponseEntity.ok(vendorService.registerAsVendor(user.getUser().getId(), request));
     }
+
+
 }

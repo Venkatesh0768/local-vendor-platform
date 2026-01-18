@@ -52,7 +52,8 @@ public class AdminVendorServiceImpl implements AdminVendorService {
 
         Role userRole = roleRepository.findByRoleName(RoleType.ROLE_VENDOR)
                 .orElseThrow(() -> new RuntimeException("ROLE VENDOR not found"));
-        user.setRoles(Set.of(userRole));
+
+        user.getRoles().add(userRole);
 
 
         return AdminVendorActionResponseDto.builder()

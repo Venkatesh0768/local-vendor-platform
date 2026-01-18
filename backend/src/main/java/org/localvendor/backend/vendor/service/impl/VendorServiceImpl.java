@@ -11,6 +11,7 @@ import org.localvendor.backend.vendor.model.VerificationStatus;
 import org.localvendor.backend.vendor.repositories.VendorLocationRepository;
 import org.localvendor.backend.vendor.repositories.VendorRepository;
 import org.localvendor.backend.vendor.service.VendorService;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,4 +72,19 @@ public class VendorServiceImpl implements VendorService {
                 .message("Vendor request submitted. Awaiting admin approval.")
                 .build();
     }
+
+    @Override
+    public UUID getVendorIdByUser(User user) {
+
+        Vendor vendor = vendorRepository.findByUserId(user.getId())
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "User is not registered as a vendor or not approved yet"
+                        )
+                );
+
+        return vendor.getVendorId();
+    }
+
+
 }
