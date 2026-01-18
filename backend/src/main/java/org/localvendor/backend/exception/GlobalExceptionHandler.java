@@ -1,5 +1,7 @@
 package org.localvendor.backend.exception;
 
+import org.localvendor.backend.exception.vendor_exceptions.VendorAlreadyVerifiedException;
+import org.localvendor.backend.exception.vendor_exceptions.VendorNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -86,6 +88,32 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 "Otp Is Invalid ",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=" , "")
+        );
+        return  new ResponseEntity<>(error , HttpStatus.BAD_REQUEST);
+
+    }
+
+    @ExceptionHandler(VendorNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleVendorNotFoundException(VendorNotFoundException ex , WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Vendor Not Found ",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=" , "")
+        );
+        return  new ResponseEntity<>(error , HttpStatus.BAD_REQUEST);
+
+    }
+
+    @ExceptionHandler(VendorAlreadyVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleVendorAlreadyVerifiedException(VendorAlreadyVerifiedException ex , WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Vendor already Verified  ",
                 ex.getMessage(),
                 request.getDescription(false).replace("uri=" , "")
         );

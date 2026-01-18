@@ -7,10 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.localvendor.backend.auth.dto.*;
-import org.localvendor.backend.auth.model.RefreshToken;
-import org.localvendor.backend.auth.model.Role;
-import org.localvendor.backend.auth.model.RoleType;
-import org.localvendor.backend.auth.model.User;
+import org.localvendor.backend.auth.model.*;
 import org.localvendor.backend.auth.repositories.RefreshTokenRepository;
 import org.localvendor.backend.auth.repositories.RoleRepository;
 import org.localvendor.backend.auth.repositories.UserRepository;
@@ -79,6 +76,7 @@ public class AuthServiceImpl implements AuthService {
                 .password(encode) //Hashing
                 .phoneNumber(requestDto.getPhoneNumber())
                 .firstName(requestDto.getFirstName())
+                .provider(Provider.LOCAL)
                 .lastName(requestDto.getLastName())
                 .image(requestDto.getImage())
                 .build();

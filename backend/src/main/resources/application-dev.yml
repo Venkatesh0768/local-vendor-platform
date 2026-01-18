@@ -51,9 +51,9 @@ otp:
   length: 6
   expiration: 300000
 
-logging:
-  level:
-    org.springframework.security: DEBUG
+#logging:
+#  level:
+#    org.springframework.security: DEBUG
 
 security:
   jwt:
