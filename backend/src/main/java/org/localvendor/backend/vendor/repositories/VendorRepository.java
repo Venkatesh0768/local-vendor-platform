@@ -2,6 +2,7 @@ package org.localvendor.backend.vendor.repositories;
 
 import org.localvendor.backend.vendor.model.Vendor;
 import org.localvendor.backend.vendor.model.VerificationStatus;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

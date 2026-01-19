@@ -3,8 +3,10 @@ package org.localvendor.backend.vendor.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.localvendor.backend.auth.model.User;
 import org.localvendor.backend.auth.repositories.UserRepository;
+import org.localvendor.backend.exception.vendor_exceptions.VendorNotFoundException;
 import org.localvendor.backend.vendor.dto.VendorRegistrationRequestDto;
 import org.localvendor.backend.vendor.dto.VendorRegistrationResponseDto;
+import org.localvendor.backend.vendor.dto.vendorDto.VendorResponseDto;
 import org.localvendor.backend.vendor.model.Vendor;
 import org.localvendor.backend.vendor.model.VendorLocation;
 import org.localvendor.backend.vendor.model.VerificationStatus;
@@ -84,6 +86,34 @@ public class VendorServiceImpl implements VendorService {
                 );
 
         return vendor.getVendorId();
+    }
+
+    @Override
+    public VendorResponseDto getMyVendorProfile(UUID userId) {
+        Vendor vendor = vendorRepository.findByUserId(userId)
+                .orElseThrow(() -> new AccessDeniedException("Vendor profile not found for user"));
+
+        return mapToDto(vendor);
+    }
+
+    @Override
+    public VendorResponseDto getVendorById(UUID vendorId) {
+        Vendor vendor = vendorRepository.findByVendorId(vendorId)
+                .orElseThrow(() -> new VendorNotFoundException("Vendor not found"));
+
+        return mapToDto(vendor);
+    }
+
+    private VendorResponseDto mapToDto(Vendor vendor) {
+        return VendorResponseDto.builder()
+                .vendorId(vendor.getVendorId())
+                .businessName(vendor.getBusinessName())
+                .vendorType(vendor.getVendorType())
+                .verificationStatus(vendor.getVerificationStatus())
+                .isActive(vendor.getIsActive())
+                .ratingAvg(vendor.getRatingAvg())
+                .totalReviews(vendor.getTotalReviews())
+                .build();
     }
 
 
