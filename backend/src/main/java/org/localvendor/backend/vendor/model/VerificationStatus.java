@@ -1,5 +1,5 @@
 package org.localvendor.backend.vendor.model;
 
 public enum VerificationStatus {
-    APPROVED, PENDING, REJECTED
+    APPROVED, PENDING, REJECTED, SUSPENDED
 }

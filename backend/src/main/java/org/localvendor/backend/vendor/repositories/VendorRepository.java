@@ -2,7 +2,10 @@ package org.localvendor.backend.vendor.repositories;
 
 import org.localvendor.backend.vendor.model.Vendor;
 import org.localvendor.backend.vendor.model.VerificationStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,4 +17,5 @@ public interface VendorRepository extends JpaRepository<Vendor, UUID> {
     boolean existsByUserId(UUID userId);
     List<Vendor> findByVerificationStatus(VerificationStatus verificationStatus);
     Optional<Vendor> findByVendorId(UUID vendorId);
+    Page<Vendor> findAll(Specification<Vendor> spec, Pageable pageable);
 }

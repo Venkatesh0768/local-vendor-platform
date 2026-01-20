@@ -1,7 +1,7 @@
 package org.localvendor.backend.admin.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.localvendor.backend.admin.dto.AdminVendorActionResponseDto;
+import org.localvendor.backend.admin.dto.*;
 import org.localvendor.backend.admin.service.AdminVendorService;
 import org.localvendor.backend.auth.model.Role;
 import org.localvendor.backend.auth.model.RoleType;
@@ -11,8 +11,10 @@ import org.localvendor.backend.auth.repositories.UserRepository;
 import org.localvendor.backend.exception.UserNotFoundException;
 import org.localvendor.backend.exception.vendor_exceptions.VendorAlreadyVerifiedException;
 import org.localvendor.backend.exception.vendor_exceptions.VendorNotFoundException;
+import org.localvendor.backend.product.repositories.CategoryRepository;
 import org.localvendor.backend.vendor.model.Vendor;
 import org.localvendor.backend.vendor.model.VerificationStatus;
+import org.localvendor.backend.vendor.repositories.VendorLocationRepository;
 import org.localvendor.backend.vendor.repositories.VendorRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +31,8 @@ public class AdminVendorServiceImpl implements AdminVendorService {
     private final VendorRepository vendorRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final VendorLocationRepository locationRepository;
+    private final CategoryRepository categoryRepository;
 
 
     @Override
@@ -86,11 +91,76 @@ public class AdminVendorServiceImpl implements AdminVendorService {
                 .build();
     }
 
+    @Override
+    public AdminVendorDetailsResponseDto getVendorDetails(UUID vendorId) {
+
+        Vendor vendor = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new VendorNotFoundException("Vendor not found"));
+
+        var locations = locationRepository.findByVendor_VendorId(vendorId)
+                .stream()
+                .map(loc -> AdminVendorLocationDto.builder()
+                        .locationId(loc.getLocationId())
+                        .addressLine(loc.getAddressLine())
+                        .area(loc.getArea())
+                        .city(loc.getCity())
+                        .state(loc.getState())
+                        .country(loc.getCountry())
+                        .pincode(loc.getPincode())
+                        .latitude(loc.getLatitude())
+                        .longitude(loc.getLongitude())
+                        .isPrimary(loc.getIsPrimary())
+                        .isLive(loc.getIsLive())
+                        .lastUpdatedAt(loc.getLastUpdatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        var categories = categoryRepository.findByVendor_VendorId(vendorId)
+                .stream()
+                .map(cat -> AdminVendorCategoryDto.builder()
+                        .categoryId(cat.getFirst().getCategoryId())
+                        .name(cat.getFirst().getName())
+                        .description(cat.getFirst().getDescription())
+                        .isActive(cat.getFirst().getIsActive())
+                        .build())
+                .collect(Collectors.toList());
+
+        boolean isLive = locations.stream().anyMatch(AdminVendorLocationDto::getIsLive);
+
+        return AdminVendorDetailsResponseDto.builder()
+                .vendorId(vendor.getVendorId())
+                .businessName(vendor.getBusinessName())
+                .vendorType(vendor.getVendorType().name())
+                .verificationStatus(vendor.getVerificationStatus().name())
+                .isActive(vendor.getIsActive())
+                .ratingAvg(vendor.getRatingAvg())
+                .totalReviews(vendor.getTotalReviews())
+                .isOpen(vendor.getIsActive())       // assuming availability flag exists
+                .isLive(isLive)
+                .locations(locations)
+                .categories(categories)
+                .build();
+    }
+
 
     @Override
     @Transactional
-    public List<Vendor> getAllVendorForVerification(){
-        return vendorRepository.findByVerificationStatus(VerificationStatus.PENDING);
+    public List<AdminVendorListResponseDto> getAllVendorForVerification() {
+        List<Vendor> vendors = vendorRepository.findByVerificationStatus(VerificationStatus.PENDING);
+
+        return vendors.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    public AdminVendorListResponseDto mapToDto(Vendor vendor) {
+        return AdminVendorListResponseDto.builder()
+                .vendorId(vendor.getVendorId())
+                .businessName(vendor.getBusinessName())
+                .vendorType(vendor.getVendorType() != null ? vendor.getVendorType().toString() : null)
+                .verificationStatus(vendor.getVerificationStatus() != null ? vendor.getVerificationStatus().toString() : null)
+                .isActive(vendor.getIsActive())
+                .build();
     }
 
 }

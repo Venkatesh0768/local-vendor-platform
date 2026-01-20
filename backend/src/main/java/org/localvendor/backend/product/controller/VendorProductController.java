@@ -8,6 +8,8 @@ import org.localvendor.backend.product.dto.ProductListItemDto;
 import org.localvendor.backend.product.dto.ProductResponseDto;
 import org.localvendor.backend.product.dto.UpdateProductRequestDto;
 import org.localvendor.backend.product.model.Product;
+import org.localvendor.backend.product.service.ProductImageService;
+import org.localvendor.backend.product.service.impl.ImageUploadService;
 import org.localvendor.backend.product.service.impl.ProductServiceImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,8 +19,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +32,8 @@ import java.util.UUID;
 public class VendorProductController {
 
     private final ProductServiceImpl productService;
+    private final ImageUploadService imageUploadService;
+    private final ProductImageService productImageService;
 
     @PostMapping
     public ResponseEntity<ProductResponseDto> createProduct(Authentication auth, @RequestBody @Valid CreateProductRequestDto request) {
@@ -88,4 +94,5 @@ public class VendorProductController {
                 pageable
         );
     }
+
 }

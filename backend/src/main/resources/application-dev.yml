@@ -81,3 +81,7 @@ app:
       success-redirect: http://localhost:5173/oauth/success
       failure-redirect: http://localhost:5173/oauth/failure
 
+cloudinary:
+  cloud-name: dfzalhdva
+  api-key: 398939341869887
+  api-secret: gwKOxZ6cTdXYnQzm0nVGaggWBbo
